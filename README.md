@@ -17,7 +17,6 @@
 
 * 🌐 **Live Web Application (Vercel):** [https://forge-vht8.vercel.app/](https://forge-vht8.vercel.app/)
 * 📦 **GitHub Source Code:** [https://github.com/Arun-1107/FORGE](https://github.com/Arun-1107/FORGE)
-* 👤 **Author:** [Arun-1107](https://github.com/Arun-1107)
 
 ---
 
