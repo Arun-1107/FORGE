@@ -12,14 +12,13 @@ const connectDB = async () => {
     console.log(`Connecting to MongoDB at: ${connStr}...`);
     
     // Connect to MongoDB
-    const conn = await mongoose.connect(connStr);
+    const conn = await mongoose.connect(connStr, { serverSelectionTimeoutMS: 5000 });
     
     console.log(`MongoDB Connected successfully: ${conn.connection.host}`);
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);
     console.log('Ensure MongoDB is installed and running locally, or update MONGO_URI in server/.env');
-    // Exit process with failure
-    process.exit(1);
+    console.log('Running backend in offline fallback mode (in-memory).');
   }
 };
 

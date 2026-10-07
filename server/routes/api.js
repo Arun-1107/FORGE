@@ -1,6 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Profile = require('../models/Profile');
+
+// In-memory fallback store when MongoDB is not connected
+let memoryProfile = {
+  name: '',
+  age: '',
+  height: '',
+  weight: '',
+  bodyfat: '',
+  fitnessLevel: 'beginner',
+  dietGoal: 'fat-loss'
+};
+
+const isDbConnected = () => mongoose.connection.readyState === 1;
 
 /**
  * FORGE API Routes
@@ -15,20 +29,24 @@ const Profile = require('../models/Profile');
 // 1. GET /api/profile - Fetch active user profile
 router.get('/profile', async (req, res) => {
   try {
-    let profile = await Profile.findOne();
-    if (!profile) {
-      // If no profile exists yet in the database, return blank defaults
-      return res.json({
-        name: '',
-        age: '',
-        height: '',
-        weight: '',
-        bodyfat: '',
-        fitnessLevel: 'beginner',
-        dietGoal: 'fat-loss'
-      });
+    if (isDbConnected()) {
+      let profile = await Profile.findOne();
+      if (!profile) {
+        // If no profile exists yet in the database, return blank defaults
+        return res.json({
+          name: '',
+          age: '',
+          height: '',
+          weight: '',
+          bodyfat: '',
+          fitnessLevel: 'beginner',
+          dietGoal: 'fat-loss'
+        });
+      }
+      return res.json(profile);
     }
-    res.json(profile);
+    // Return in-memory fallback
+    res.json(memoryProfile);
   } catch (err) {
     res.status(500).json({ error: 'Failed to retrieve profile: ' + err.message });
   }
@@ -39,31 +57,43 @@ router.post('/profile', async (req, res) => {
   try {
     const { name, age, height, weight, bodyfat } = req.body;
     
-    let profile = await Profile.findOne();
-    
-    if (profile) {
-      // Update existing document
-      profile.name = name || profile.name;
-      profile.age = age || profile.age;
-      profile.height = height || profile.height;
-      profile.weight = weight || profile.weight;
-      profile.bodyfat = bodyfat || profile.bodyfat;
-      await profile.save();
-    } else {
-      // Create new document
-      profile = new Profile({
-        name,
-        age,
-        height,
-        weight,
-        bodyfat,
-        fitnessLevel: 'beginner',
-        dietGoal: 'fat-loss'
-      });
-      await profile.save();
+    if (isDbConnected()) {
+      let profile = await Profile.findOne();
+      
+      if (profile) {
+        // Update existing document
+        profile.name = name !== undefined ? name : profile.name;
+        profile.age = age !== undefined ? age : profile.age;
+        profile.height = height !== undefined ? height : profile.height;
+        profile.weight = weight !== undefined ? weight : profile.weight;
+        profile.bodyfat = bodyfat !== undefined ? bodyfat : profile.bodyfat;
+        await profile.save();
+      } else {
+        // Create new document
+        profile = new Profile({
+          name: name || 'Anonymous',
+          age: age || 25,
+          height: height || 175,
+          weight: weight || 70,
+          bodyfat: bodyfat || 15,
+          fitnessLevel: 'beginner',
+          dietGoal: 'fat-loss'
+        });
+        await profile.save();
+      }
+      return res.json(profile);
     }
-    
-    res.json(profile);
+
+    // In-memory fallback
+    memoryProfile = {
+      ...memoryProfile,
+      name: name !== undefined ? name : memoryProfile.name,
+      age: age !== undefined ? age : memoryProfile.age,
+      height: height !== undefined ? height : memoryProfile.height,
+      weight: weight !== undefined ? weight : memoryProfile.weight,
+      bodyfat: bodyfat !== undefined ? bodyfat : memoryProfile.bodyfat
+    };
+    res.json(memoryProfile);
   } catch (err) {
     res.status(400).json({ error: 'Failed to save profile: ' + err.message });
   }
@@ -72,8 +102,11 @@ router.post('/profile', async (req, res) => {
 // 3. GET /api/fitness - Fetch active fitness level classification
 router.get('/fitness', async (req, res) => {
   try {
-    const profile = await Profile.findOne();
-    res.json({ level: profile ? profile.fitnessLevel : 'beginner' });
+    if (isDbConnected()) {
+      const profile = await Profile.findOne();
+      return res.json({ level: profile ? profile.fitnessLevel : 'beginner' });
+    }
+    res.json({ level: memoryProfile.fitnessLevel || 'beginner' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -83,24 +116,29 @@ router.get('/fitness', async (req, res) => {
 router.post('/fitness', async (req, res) => {
   try {
     const { level } = req.body;
-    let profile = await Profile.findOne();
-    
-    if (!profile) {
-      // Create a skeleton profile if none exists
-      profile = new Profile({
-        name: 'Anonymous',
-        age: 25,
-        height: 175,
-        weight: 70,
-        bodyfat: 15,
-        fitnessLevel: level
-      });
-    } else {
-      profile.fitnessLevel = level;
+    if (isDbConnected()) {
+      let profile = await Profile.findOne();
+      
+      if (!profile) {
+        // Create a skeleton profile if none exists
+        profile = new Profile({
+          name: 'Anonymous',
+          age: 25,
+          height: 175,
+          weight: 70,
+          bodyfat: 15,
+          fitnessLevel: level
+        });
+      } else {
+        profile.fitnessLevel = level;
+      }
+      
+      await profile.save();
+      return res.json({ level: profile.fitnessLevel });
     }
-    
-    await profile.save();
-    res.json({ level: profile.fitnessLevel });
+
+    memoryProfile.fitnessLevel = level;
+    res.json({ level: memoryProfile.fitnessLevel });
   } catch (err) {
     res.status(400).json({ error: 'Failed to save fitness level: ' + err.message });
   }
@@ -109,8 +147,11 @@ router.post('/fitness', async (req, res) => {
 // 5. GET /api/diet - Fetch active diet goal
 router.get('/diet', async (req, res) => {
   try {
-    const profile = await Profile.findOne();
-    res.json({ goal: profile ? profile.dietGoal : 'fat-loss' });
+    if (isDbConnected()) {
+      const profile = await Profile.findOne();
+      return res.json({ goal: profile ? profile.dietGoal : 'fat-loss' });
+    }
+    res.json({ goal: memoryProfile.dietGoal || 'fat-loss' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -120,24 +161,29 @@ router.get('/diet', async (req, res) => {
 router.post('/diet', async (req, res) => {
   try {
     const { goal } = req.body;
-    let profile = await Profile.findOne();
-    
-    if (!profile) {
-      // Create a skeleton profile if none exists
-      profile = new Profile({
-        name: 'Anonymous',
-        age: 25,
-        height: 175,
-        weight: 70,
-        bodyfat: 15,
-        dietGoal: goal
-      });
-    } else {
-      profile.dietGoal = goal;
+    if (isDbConnected()) {
+      let profile = await Profile.findOne();
+      
+      if (!profile) {
+        // Create a skeleton profile if none exists
+        profile = new Profile({
+          name: 'Anonymous',
+          age: 25,
+          height: 175,
+          weight: 70,
+          bodyfat: 15,
+          dietGoal: goal
+        });
+      } else {
+        profile.dietGoal = goal;
+      }
+      
+      await profile.save();
+      return res.json({ goal: profile.dietGoal });
     }
-    
-    await profile.save();
-    res.json({ goal: profile.dietGoal });
+
+    memoryProfile.dietGoal = goal;
+    res.json({ goal: memoryProfile.dietGoal });
   } catch (err) {
     res.status(400).json({ error: 'Failed to save diet goal: ' + err.message });
   }

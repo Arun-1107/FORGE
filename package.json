@@ -2,11 +2,18 @@
   "name": "forge-platform",
   "version": "1.0.0",
   "description": "FORGE Fitness Platform - Full Stack MERN Workspace",
+  "homepage": "https://forge-vht8.vercel.app/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Arun-1107/FORGE.git"
+  },
+  "author": "Arun-1107",
   "scripts": {
     "install-all": "npm install --prefix client && npm install --prefix server",
     "client": "npm run dev --prefix client",
     "server": "npm start --prefix server",
     "server-dev": "npm run dev --prefix server",
+    "start": "npm run dev",
     "dev": "npx concurrently --kill-others \"npm run client\" \"npm run server-dev\""
   },
   "dependencies": {

@@ -377,6 +377,10 @@ export default function App() {
           </div>
           <div className="footer-bottom">
             <span className="mono">// client app operational — mock data model configured</span>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+              <a href="https://forge-vht8.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--vital)', textDecoration: 'none', fontWeight: 'bold' }} className="mono">🚀 Live App</a>
+              <a href="https://github.com/Arun-1107/FORGE" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--steel)', textDecoration: 'none' }} className="mono">★ GitHub</a>
+            </div>
             <span className="mono">FORGE © 2026</span>
           </div>
         </div>

@@ -2,8 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
 
+const path = require('path');
+
 // Load environment variables from .env file
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // Create Express application instance
 const app = express();
